@@ -2,6 +2,8 @@ from __future__ import annotations
 from pathlib import Path
 import csv
 
+PATH_DATA = Path('src/data')
+
 class VoteKind:
     UP: str='up'
     DOWN: str='dn'
@@ -87,7 +89,7 @@ def parse_received(mu: User, users: dict[str, User]):
     """
     Read the received file and update mu and users in place.
     """
-    path = Path(f'src/data/{mu.name}-received.csv')
+    path = PATH_DATA / f'{mu.name}-received.csv'
     if not path.exists():
         return
     
@@ -122,7 +124,7 @@ def parse_given(mu: User, users: dict[str, User]):
     """
     Read the given file and update mu and users in place.
     """
-    path = Path(f'src/data/{mu.name}-given.csv')
+    path = PATH_DATA / f'{mu.name}-given.csv'
     if not path.exists():
         return
     
@@ -183,11 +185,27 @@ def report(mu: User, users: dict[str, User]):
     for vr in sorted(mu.vrs_received, key=lambda vr: -vr.er)[:10]:
         print(f'{vr.er:<6.2f}% {vr.votes[VoteKind.DOWN]:>4}:{vr.votes[VoteKind.UP]:<4} {vr.fr}')
 
-def run():
-    name = input('Enter username of account in question: ').strip()
+def report_one(name: str) -> None:
     user = User(name)
     users = {name: user}
     report(user, users)
+
+def report_all() -> None:
+    names = set()
+    for path in PATH_DATA.glob('*.csv'):
+        # Chop off final '-given' or '-received'
+        name = '-'.join(path.stem.split('-')[:-1])
+        names.add(name)
+        
+    for name in sorted(names):
+        report_one(name)
+
+def run():
+    name = input('Enter username of account in question, or * for all: ').strip()
+    if name == '*':
+        report_all()
+    else:
+        report_one(name)
 
 if __name__ == '__main__':
     run()

@@ -148,6 +148,14 @@ def parse_given(mu: User, users: dict[str, User]):
             vr.votes[kind] = num
             mu.vote_given_totals[kind] = denom
 
+def get_er(vr: UnidirectionalVoteRecord) -> float:
+    dv = vr.votes[VoteKind.DOWN]
+    total = sum(vr.votes.values())
+    if not total:
+        return 0
+    else:
+        return (dv / total) * 100
+
 def report(mu: User, users: dict[str, User]):
     """
     mu = main user, the user's page we're targeting
@@ -155,8 +163,25 @@ def report(mu: User, users: dict[str, User]):
     parse_received(mu, users)
     parse_given(mu, users)
 
+    print()
     print(f'{mu.name} votes given:', mu.vote_given_totals)
     print(f'{mu.name} votes received:', mu.vote_received_totals)
+    
+    # ad hoc attribute er = 'evil ratio', or ratio of dv to total
+    for vr in mu.vrs_given.union(mu.vrs_received):
+        vr.er = get_er(vr)
+
+    print()
+
+    print(f'People {mu.name} has the highest dv ratio towards')
+    for vr in sorted(mu.vrs_given, key=lambda vr: -vr.er)[:10]:
+        print(f'{vr.er:<6.2f}% {vr.votes[VoteKind.DOWN]:>4}:{vr.votes[VoteKind.UP]:<4} {vr.to}')
+
+    print()
+
+    print(f'People {mu.name} has the highest dv ratio from')
+    for vr in sorted(mu.vrs_received, key=lambda vr: -vr.er)[:10]:
+        print(f'{vr.er:<6.2f}% {vr.votes[VoteKind.DOWN]:>4}:{vr.votes[VoteKind.UP]:<4} {vr.fr}')
 
 def run():
     name = input('Enter username of account in question: ').strip()
